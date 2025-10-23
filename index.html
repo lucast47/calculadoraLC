@@ -87,7 +87,7 @@
 </style>
 </head>
 <body>
-  <h1>Calculadora de Cuota</h1>
+  <h1>Calculadora de Crédito - LJC</h1>
 
   <div class="card">
     <form id="form">
@@ -170,106 +170,90 @@ const fngTabla = {
   33:[3.35,6.47,6.93],34:[3.37,6.65,7.12],35:[3.39,6.83,7.32],36:[3.41,7.02,7.53]
 };
 
-function formatoCOPSinDecimales(n){ return "$" + Math.round(n).toLocaleString('es-CO'); }
-function limpiarNumero(v){ const s=String(v).replace(/[^\d]/g,''); return s===""?0:parseInt(s,10); }
-function formatoPorcentajeMostrar(p){ return p.toFixed(2).replace('.',',') + "%"; }
+function formatoCOP(n){ return "$" + Math.round(n).toLocaleString("es-CO"); }
+function limpiarNumero(v){ return parseInt(String(v).replace(/[^\d]/g,""))||0; }
+function formatoPct(p){ return p.toFixed(2).replace(".",",")+"%"; }
 
-const elTipo=document.getElementById('tipoCliente');
-const elPerfil=document.getElementById('perfil');
-const elMonto=document.getElementById('monto');
-const elPlazo=document.getElementById('plazo');
-const elInfoBlock=document.getElementById('infoBlock');
-const elTEA=document.getElementById('tasaTEA');
-const elCuotaFija=document.getElementById('cuotaFija');
-const elAplicaMipyme=document.getElementById('aplicaMipyme');
-const elFngLine=document.getElementById('fngLine');
-const elFngValue=document.getElementById('fngValue');
-const tabla=document.getElementById('tablaResultados');
-const tbody=tabla.querySelector('tbody');
+const elTipo = tipoCliente, elPerfil = perfil, elMonto = monto, elPlazo = plazo;
+const elInfoBlock = infoBlock, elTEA = tasaTEA, elCuotaFija = cuotaFija, elAplicaMipyme = aplicaMipyme, elFngLine = fngLine, elFngValue = fngValue;
+const tabla = tablaResultados, tbody = tabla.querySelector("tbody");
 
-function obtenerTasa(tipo, perfil, monto){
-  const r=monto<=8541000?0:monto<=35587500?1:2;
-  return tasas[tipo][perfil][r];
+function obtenerTasa(t, p, m){
+  const r = m<=8541000?0:m<=35587500?1:2;
+  return tasas[t][p][r];
 }
-
-function obtenerFngPorcentaje(plazo,monto){
-  const p=parseInt(plazo,10);
-  if(!p||p<1||p>36)return;
-  const r=monto<=8541000?0:monto<=35587500?1:2;
+function obtenerFngPct(p, m){
+  if(p<1||p>36)return undefined;
+  const r = m<=8541000?0:m<=35587500?1:2;
   return fngTabla[p][r];
 }
-
-function obtenerPorcentajeMipymeFijo(monto,tipo,perfil){
-  if(tipo==="ANTIGUO"&&perfil==="A+")return 0;
-  if(monto<=0)return 0;
-  if(monto<=5693900)return 0.006045;
-  if(monto<=35587500)return 0.003675;
+function obtenerPctMipyme(m,t,p){
+  if(t==="ANTIGUO"&&p==="A+")return 0;
+  if(m<=5693900)return 0.006045;
+  if(m<=35587500)return 0.003675;
   return 0;
-}
-
-function calcularFNGMostrar(monto,plazo){
-  const p=obtenerFngPorcentaje(plazo,monto);
-  if(typeof p==='undefined')return null;
-  const base=monto*(p/100);
-  return { porcentajeBase:p, valorConIVA:base*1.19 };
 }
 
 function calcularYRenderizar(){
   const tipo=elTipo.value, perfil=elPerfil.value;
   const monto=limpiarNumero(elMonto.value);
-  const plazo=parseInt(elPlazo.value,10)||0;
-  if(!monto||!plazo){ elInfoBlock.style.display='none'; tabla.style.display='none'; return; }
+  const plazo=parseInt(elPlazo.value)||0;
+  if(!monto||!plazo){ elInfoBlock.style.display="none"; tabla.style.display="none"; return; }
 
   const tea=obtenerTasa(tipo,perfil,monto);
   const tem=Math.pow(1+tea/100,1/12)-1;
-  const cuota=monto*(tem/(1-Math.pow(1+tem,-plazo)));
+  const cuotaBase=monto*(tem/(1-Math.pow(1+tem,-plazo)));
 
-  const porcMipyme=obtenerPorcentajeMipymeFijo(monto,tipo,perfil);
-  const porcMipymeIVA=porcMipyme*1.19;
-  const aplicaMipyme=porcMipyme>0;
+  const pctMipymeSinIVA=obtenerPctMipyme(monto,tipo,perfil);
+  const pctMipymeConIVA=pctMipymeSinIVA*1.19;
+  const cuotaMipymeMensual=monto*pctMipymeConIVA;
+  const cuotaTotalMensual=cuotaBase+cuotaMipymeMensual;
 
-  const fng=calcularFNGMostrar(monto,plazo);
-  const cuotaConMipyme=cuota*(1+porcMipymeIVA); // ✅ cambio: incluye MIPYME
-
-  elInfoBlock.style.display='block';
+  elInfoBlock.style.display="block";
   elTEA.textContent=tea.toFixed(2)+"%";
-  elCuotaFija.textContent=formatoCOPSinDecimales(cuotaConMipyme);
-  elAplicaMipyme.textContent=aplicaMipyme?"Sí":"No";
-  elFngLine.style.display='block';
-  elFngValue.textContent=fng?`${formatoPorcentajeMostrar(fng.porcentajeBase)} - ${formatoCOPSinDecimales(fng.valorConIVA)}`:"No se tiene información del % de FNG.";
+  elCuotaFija.textContent=formatoCOP(cuotaTotalMensual);
+  elAplicaMipyme.textContent=pctMipymeSinIVA>0?"Sí":"No";
+
+  const fngPct=obtenerFngPct(plazo,monto);
+  if(!fngPct){ elFngValue.textContent="No se tiene información del % de FNG."; }
+  else {
+    const vFNG=monto*(fngPct/100)*1.19;
+    elFngValue.textContent=`${formatoPct(fngPct)} - ${formatoCOP(vFNG)}`;
+  }
 
   tbody.innerHTML="";
   let saldo=monto;
   for(let i=1;i<=plazo;i++){
     const interes=saldo*tem;
-    const capital=cuota-interes;
+    const capital=cuotaBase-interes;
     saldo-=capital;
-    const cuotaMipyme=saldo*porcMipymeIVA;
-    const total=cuota+cuotaMipyme;
-    const row=document.createElement('tr');
+    const row=document.createElement("tr");
     row.innerHTML=`
       <td>${i}</td>
-      <td>${formatoCOPSinDecimales(total)}</td>
-      <td>${formatoCOPSinDecimales(capital)}</td>
-      <td>${formatoCOPSinDecimales(interes)}</td>
-      <td>${formatoCOPSinDecimales(cuotaMipyme)}</td>
-      <td>${formatoCOPSinDecimales(Math.max(saldo,0))}</td>`;
+      <td>${formatoCOP(cuotaTotalMensual)}</td>
+      <td>${formatoCOP(capital)}</td>
+      <td>${formatoCOP(interes)}</td>
+      <td>${formatoCOP(cuotaMipymeMensual)}</td>
+      <td>${formatoCOP(Math.max(saldo,0))}</td>
+    `;
     tbody.appendChild(row);
   }
-  tabla.style.display='table';
+  tabla.style.display="table";
 }
 
-[elTipo,elPerfil,elMonto,elPlazo].forEach(e=>{
-  e.addEventListener('input',()=>{
-    if(e===elMonto){const v=limpiarNumero(elMonto.value);elMonto.value=v?formatoCOPSinDecimales(v):"";}
+[elTipo,elPerfil,elMonto,elPlazo].forEach(el=>{
+  el.addEventListener("input",()=>{
+    if(el===elMonto){
+      const v=limpiarNumero(elMonto.value);
+      elMonto.value=v?formatoCOP(v):"";
+    }
     calcularYRenderizar();
   });
 });
-elMonto.addEventListener('blur',()=>{
+elMonto.addEventListener("blur",()=>{
   const v=limpiarNumero(elMonto.value);
-  elMonto.value=v?formatoCOPSinDecimales(v):"";
+  elMonto.value=v?formatoCOP(v):"";
 });
 </script>
 </body>
 </html>
-
