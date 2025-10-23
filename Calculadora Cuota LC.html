@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Calculadora Crédito - Sistema Francés</title>
+<style>
+  :root{
+    --primary:#2563eb;
+    --card-bg:#fff;
+    --muted:#6b7280;
+    --surface:#f8fafc;
+  }
+  body{
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--surface);
+    margin: 36px;
+    color:#111827;
+  }
+  h1{
+    text-align:center;
+    color:#0f172a;
+    margin-bottom:20px;
+  }
+  .card{
+    max-width:960px;
+    margin:0 auto;
+    background:var(--card-bg);
+    padding:24px;
+    border-radius:12px;
+    box-shadow:0 6px 18px rgba(15,23,42,0.08);
+  }
+  form{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:16px;
+    align-items:end;
+  }
+  label{ display:block; font-weight:600; margin-bottom:6px; font-size:0.95rem; color:#0b1220;}
+  .full { grid-column: 1 / -1; }
+  select,input[type="text"], input[type="number"]{
+    width:100%;
+    padding:12px 10px;
+    border-radius:8px;
+    border:1px solid #d1d5db;
+    font-size:1rem;
+    box-sizing:border-box;
+    background:#fff;
+  }
+  input::placeholder{ color:#9ca3af; }
+  .info {
+    margin-top:18px;
+    background:#fff;
+    padding:14px;
+    border-radius:10px;
+    border:1px solid rgba(37,99,235,0.08);
+  }
+  .info p{ margin:6px 0; font-size:0.98rem; }
+  .info strong{ color:#0b1220; }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:18px;
+    background:#fff;
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 4px 12px rgba(2,6,23,0.04);
+  }
+  th,td{
+    padding:10px 12px;
+    border-bottom:1px solid #e6edf3;
+    text-align:right;
+    font-size:0.95rem;
+  }
+  thead th{
+    background:var(--primary);
+    color:#fff;
+    font-weight:600;
+    text-align:right;
+  }
+  tbody td:first-child, thead th:first-child {
+    text-align:left;
+  }
+  @media (max-width:720px){
+    form{ grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <h1>Calculadora de Cuota</h1>
+
+  <div class="card">
+    <form id="form">
+      <div>
+        <label for="tipoCliente">Tipo de Cliente</label>
+        <select id="tipoCliente" aria-label="Tipo de Cliente">
+          <option value="NUEVO">NUEVO</option>
+          <option value="ANTIGUO">ANTIGUO</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="perfil">Perfil Crediticio</label>
+        <select id="perfil" aria-label="Perfil Crediticio">
+          <option value="A+">A+</option>
+          <option value="BAA">BAA</option>
+          <option value="BBB">BBB</option>
+          <option value="BCC">BCC</option>
+        </select>
+      </div>
+
+      <div class="full">
+        <label for="monto">Monto del crédito (COP)</label>
+        <input id="monto" type="text" placeholder="$0" aria-label="Monto del crédito (COP)" />
+      </div>
+
+      <div>
+        <label for="plazo">Plazo (meses)</label>
+        <input id="plazo" type="number" min="1" max="120" placeholder="Ej: 12" aria-label="Plazo (meses)" />
+      </div>
+
+      <div></div>
+    </form>
+
+    <div class="info" id="infoBlock" style="display:none;">
+      <p><strong>Cuota fija mensual:</strong> <span id="cuotaFija"></span></p>
+      <p><strong>Tasa efectiva anual:</strong> <span id="tasaTEA"></span></p>
+      <p><strong>Aplica MIPYME:</strong> <span id="aplicaMipyme"></span></p>
+      <p id="fngLine"><strong>Valor FNG estimado:</strong> <span id="fngValue"></span></p>
+    </div>
+
+    <table id="tablaResultados" style="display:none;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Cuota total</th>
+          <th>Capital</th>
+          <th>Intereses</th>
+          <th>Cuota MIPYME (IVA)</th>
+          <th>Saldo final</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+<script>
+const tasas = {
+  NUEVO: {
+    "A+": [48.65, 46.2, 35.2],
+    "BAA": [56.5, 51.4, 37.2],
+    "BBB": [60.7, 52.0, 37.5],
+    "BCC": [65.0, 65.0, 65.0]
+  },
+  ANTIGUO: {
+    "A+": [44.65, 42.6, 32.2],
+    "BAA": [55.85, 51.0, 36.6],
+    "BBB": [60.2, 51.6, 37.0],
+    "BCC": [65.0, 65.0, 65.0]
+  }
+};
+
+const fngTabla = {
+  1:[2.99,3.5,3.75],2:[2.99,3.5,3.75],3:[2.99,3.5,3.75],4:[2.99,3.5,3.75],5:[2.99,3.5,3.75],6:[2.99,3.5,3.75],
+  7:[2.99,3.5,3.75],8:[2.99,3.5,3.75],9:[2.99,3.5,3.75],10:[2.99,3.5,3.75],11:[2.99,3.5,3.75],12:[2.99,3.5,3.75],
+  13:[3.01,3.52,3.77],14:[3.03,3.58,3.84],15:[3.05,3.68,3.94],16:[3.06,3.8,4.07],17:[3.08,3.93,4.21],
+  18:[3.1,4.09,4.38],19:[3.11,4.26,4.56],20:[3.13,4.44,4.76],21:[3.15,4.64,4.97],22:[3.17,4.84,5.18],
+  23:[3.18,5.05,5.41],24:[3.2,5.27,5.64],25:[3.22,5.35,5.73],26:[3.23,5.45,5.83],27:[3.25,5.56,5.96],
+  28:[3.27,5.68,6.09],29:[3.29,5.82,6.24],30:[3.3,5.97,6.4],31:[3.32,6.13,6.56],32:[3.34,6.29,6.74],
+  33:[3.35,6.47,6.93],34:[3.37,6.65,7.12],35:[3.39,6.83,7.32],36:[3.41,7.02,7.53]
+};
+
+function formatoCOPSinDecimales(n){ return "$" + Math.round(n).toLocaleString('es-CO'); }
+function limpiarNumero(v){ const s=String(v).replace(/[^\d]/g,''); return s===""?0:parseInt(s,10); }
+function formatoPorcentajeMostrar(p){ return p.toFixed(2).replace('.',',') + "%"; }
+
+const elTipo=document.getElementById('tipoCliente');
+const elPerfil=document.getElementById('perfil');
+const elMonto=document.getElementById('monto');
+const elPlazo=document.getElementById('plazo');
+const elInfoBlock=document.getElementById('infoBlock');
+const elTEA=document.getElementById('tasaTEA');
+const elCuotaFija=document.getElementById('cuotaFija');
+const elAplicaMipyme=document.getElementById('aplicaMipyme');
+const elFngLine=document.getElementById('fngLine');
+const elFngValue=document.getElementById('fngValue');
+const tabla=document.getElementById('tablaResultados');
+const tbody=tabla.querySelector('tbody');
+
+function obtenerTasa(tipo, perfil, monto){
+  const r=monto<=8541000?0:monto<=35587500?1:2;
+  return tasas[tipo][perfil][r];
+}
+
+function obtenerFngPorcentaje(plazo,monto){
+  const p=parseInt(plazo,10);
+  if(!p||p<1||p>36)return;
+  const r=monto<=8541000?0:monto<=35587500?1:2;
+  return fngTabla[p][r];
+}
+
+function obtenerPorcentajeMipymeFijo(monto,tipo,perfil){
+  if(tipo==="ANTIGUO"&&perfil==="A+")return 0;
+  if(monto<=0)return 0;
+  if(monto<=5693900)return 0.006045;
+  if(monto<=35587500)return 0.003675;
+  return 0;
+}
+
+function calcularFNGMostrar(monto,plazo){
+  const p=obtenerFngPorcentaje(plazo,monto);
+  if(typeof p==='undefined')return null;
+  const base=monto*(p/100);
+  return { porcentajeBase:p, valorConIVA:base*1.19 };
+}
+
+function calcularYRenderizar(){
+  const tipo=elTipo.value, perfil=elPerfil.value;
+  const monto=limpiarNumero(elMonto.value);
+  const plazo=parseInt(elPlazo.value,10)||0;
+  if(!monto||!plazo){ elInfoBlock.style.display='none'; tabla.style.display='none'; return; }
+
+  const tea=obtenerTasa(tipo,perfil,monto);
+  const tem=Math.pow(1+tea/100,1/12)-1;
+  const cuota=monto*(tem/(1-Math.pow(1+tem,-plazo)));
+
+  const porcMipyme=obtenerPorcentajeMipymeFijo(monto,tipo,perfil);
+  const porcMipymeIVA=porcMipyme*1.19;
+  const aplicaMipyme=porcMipyme>0;
+
+  const fng=calcularFNGMostrar(monto,plazo);
+  const cuotaConMipyme=cuota*(1+porcMipymeIVA); // ✅ cambio: incluye MIPYME
+
+  elInfoBlock.style.display='block';
+  elTEA.textContent=tea.toFixed(2)+"%";
+  elCuotaFija.textContent=formatoCOPSinDecimales(cuotaConMipyme);
+  elAplicaMipyme.textContent=aplicaMipyme?"Sí":"No";
+  elFngLine.style.display='block';
+  elFngValue.textContent=fng?`${formatoPorcentajeMostrar(fng.porcentajeBase)} - ${formatoCOPSinDecimales(fng.valorConIVA)}`:"No se tiene información del % de FNG.";
+
+  tbody.innerHTML="";
+  let saldo=monto;
+  for(let i=1;i<=plazo;i++){
+    const interes=saldo*tem;
+    const capital=cuota-interes;
+    saldo-=capital;
+    const cuotaMipyme=saldo*porcMipymeIVA;
+    const total=cuota+cuotaMipyme;
+    const row=document.createElement('tr');
+    row.innerHTML=`
+      <td>${i}</td>
+      <td>${formatoCOPSinDecimales(total)}</td>
+      <td>${formatoCOPSinDecimales(capital)}</td>
+      <td>${formatoCOPSinDecimales(interes)}</td>
+      <td>${formatoCOPSinDecimales(cuotaMipyme)}</td>
+      <td>${formatoCOPSinDecimales(Math.max(saldo,0))}</td>`;
+    tbody.appendChild(row);
+  }
+  tabla.style.display='table';
+}
+
+[elTipo,elPerfil,elMonto,elPlazo].forEach(e=>{
+  e.addEventListener('input',()=>{
+    if(e===elMonto){const v=limpiarNumero(elMonto.value);elMonto.value=v?formatoCOPSinDecimales(v):"";}
+    calcularYRenderizar();
+  });
+});
+elMonto.addEventListener('blur',()=>{
+  const v=limpiarNumero(elMonto.value);
+  elMonto.value=v?formatoCOPSinDecimales(v):"";
+});
+</script>
+</body>
+</html>
