@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Calculadora Crédito - LJC</title>
+<title>Calculadora Crédito - Sistema Francés</title>
 <style>
   :root{
     --primary:#2563eb;
@@ -87,13 +87,13 @@
 </style>
 </head>
 <body>
-  <h1>Calculadora de Cuota</h1>
+  <h1>Calculadora de Crédito - LJC</h1>
 
   <div class="card">
     <form id="form">
       <div>
         <label for="tipoCliente">Tipo de Cliente</label>
-        <select id="tipoCliente" aria-label="Tipo de Cliente">
+        <select id="tipoCliente" aria-label="Tipo de Cliente" required>
           <option value="NUEVO">NUEVO</option>
           <option value="ANTIGUO">ANTIGUO</option>
         </select>
@@ -101,7 +101,7 @@
 
       <div>
         <label for="perfil">Perfil Crediticio</label>
-        <select id="perfil" aria-label="Perfil Crediticio">
+        <select id="perfil" aria-label="Perfil Crediticio" required>
           <option value="A+">A+</option>
           <option value="BAA">BAA</option>
           <option value="BBB">BBB</option>
@@ -109,14 +109,27 @@
         </select>
       </div>
 
-      <div class="full">
+      <div>
         <label for="monto">Monto del crédito (COP)</label>
-        <input id="monto" type="text" placeholder="$0" aria-label="Monto del crédito (COP)" />
+        <input id="monto" type="text" placeholder="$0" aria-label="Monto del crédito (COP)" required />
       </div>
 
       <div>
         <label for="plazo">Plazo (meses)</label>
-        <input id="plazo" type="number" min="1" max="120" placeholder="Ej: 12" aria-label="Plazo (meses)" />
+        <input id="plazo" type="number" min="1" max="120" placeholder="Ej: 12" aria-label="Plazo (meses)" required />
+      </div>
+
+      <div>
+        <label for="genero">Género</label>
+        <select id="genero" aria-label="Género" required>
+          <option value="F">Femenino</option>
+          <option value="M">Masculino</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="edad">Edad</label>
+        <select id="edad" aria-label="Edad" required></select>
       </div>
 
       <div></div>
@@ -137,6 +150,7 @@
           <th>Capital</th>
           <th>Intereses</th>
           <th>Cuota MIPYME (IVA)</th>
+          <th>Seguro de vida</th>
           <th>Saldo final</th>
         </tr>
       </thead>
@@ -146,115 +160,25 @@
 
 <script>
 const tasas = {
-  NUEVO: {
-    "A+": [48.65, 46.2, 35.2],
-    "BAA": [56.5, 51.4, 37.2],
-    "BBB": [60.7, 52.0, 37.5],
-    "BCC": [65.0, 65.0, 65.0]
-  },
-  ANTIGUO: {
-    "A+": [44.65, 42.6, 32.2],
-    "BAA": [55.85, 51.0, 36.6],
-    "BBB": [60.2, 51.6, 37.0],
-    "BCC": [65.0, 65.0, 65.0]
-  }
+  NUEVO: {"A+":[48.65,46.2,35.2],"BAA":[56.5,51.4,37.2],"BBB":[60.7,52.0,37.5],"BCC":[65.0,65.0,65.0]},
+  ANTIGUO: {"A+":[44.65,42.6,32.2],"BAA":[55.85,51.0,36.6],"BBB":[60.2,51.6,37.0],"BCC":[65.0,65.0,65.0]}
 };
-
-const fngTabla = {
-  1:[2.99,3.5,3.75],2:[2.99,3.5,3.75],3:[2.99,3.5,3.75],4:[2.99,3.5,3.75],5:[2.99,3.5,3.75],6:[2.99,3.5,3.75],
-  7:[2.99,3.5,3.75],8:[2.99,3.5,3.75],9:[2.99,3.5,3.75],10:[2.99,3.5,3.75],11:[2.99,3.5,3.75],12:[2.99,3.5,3.75],
-  13:[3.01,3.52,3.77],14:[3.03,3.58,3.84],15:[3.05,3.68,3.94],16:[3.06,3.8,4.07],17:[3.08,3.93,4.21],
-  18:[3.1,4.09,4.38],19:[3.11,4.26,4.56],20:[3.13,4.44,4.76],21:[3.15,4.64,4.97],22:[3.17,4.84,5.18],
-  23:[3.18,5.05,5.41],24:[3.2,5.27,5.64],25:[3.22,5.35,5.73],26:[3.23,5.45,5.83],27:[3.25,5.56,5.96],
-  28:[3.27,5.68,6.09],29:[3.29,5.82,6.24],30:[3.3,5.97,6.4],31:[3.32,6.13,6.56],32:[3.34,6.29,6.74],
-  33:[3.35,6.47,6.93],34:[3.37,6.65,7.12],35:[3.39,6.83,7.32],36:[3.41,7.02,7.53]
-};
-
-function formatoCOP(n){ return "$" + Math.round(n).toLocaleString("es-CO"); }
-function limpiarNumero(v){ return parseInt(String(v).replace(/[^\d]/g,""))||0; }
-function formatoPct(p){ return p.toFixed(2).replace(".",",")+"%"; }
-
-const elTipo = tipoCliente, elPerfil = perfil, elMonto = monto, elPlazo = plazo;
-const elInfoBlock = infoBlock, elTEA = tasaTEA, elCuotaFija = cuotaFija, elAplicaMipyme = aplicaMipyme, elFngLine = fngLine, elFngValue = fngValue;
-const tabla = tablaResultados, tbody = tabla.querySelector("tbody");
-
-function obtenerTasa(t, p, m){
-  const r = m<=8541000?0:m<=35587500?1:2;
-  return tasas[t][p][r];
-}
-function obtenerFngPct(p, m){
-  if(p<1||p>36)return undefined;
-  const r = m<=8541000?0:m<=35587500?1:2;
-  return fngTabla[p][r];
-}
-function obtenerPctMipyme(m,t,p){
-  if(t==="ANTIGUO"&&p==="A+")return 0;
-  if(m<=5693900)return 0.006045;
-  if(m<=35587500)return 0.003675;
-  return 0;
-}
-
-function calcularYRenderizar(){
-  const tipo=elTipo.value, perfil=elPerfil.value;
-  const monto=limpiarNumero(elMonto.value);
-  const plazo=parseInt(elPlazo.value)||0;
-  if(!monto||!plazo){ elInfoBlock.style.display="none"; tabla.style.display="none"; return; }
-
-  const tea=obtenerTasa(tipo,perfil,monto);
-  const tem=Math.pow(1+tea/100,1/12)-1;
-  const cuotaBase=monto*(tem/(1-Math.pow(1+tem,-plazo)));
-
-  const pctMipymeSinIVA=obtenerPctMipyme(monto,tipo,perfil);
-  const pctMipymeConIVA=pctMipymeSinIVA*1.19;
-  const cuotaMipymeMensual=monto*pctMipymeConIVA;
-  const cuotaTotalMensual=cuotaBase+cuotaMipymeMensual;
-
-  elInfoBlock.style.display="block";
-  elTEA.textContent=tea.toFixed(2)+"%";
-  elCuotaFija.textContent=formatoCOP(cuotaTotalMensual);
-  elAplicaMipyme.textContent=pctMipymeSinIVA>0?"Sí":"No";
-
-  const fngPct=obtenerFngPct(plazo,monto);
-  if(!fngPct){ elFngValue.textContent="No se tiene información del % de FNG."; }
-  else {
-    const vFNG=monto*(fngPct/100)*1.19;
-    elFngValue.textContent=`${formatoPct(fngPct)} - ${formatoCOP(vFNG)}`;
-  }
-
-  tbody.innerHTML="";
-  let saldo=monto;
-  for(let i=1;i<=plazo;i++){
-    const interes=saldo*tem;
-    const capital=cuotaBase-interes;
-    saldo-=capital;
-    const row=document.createElement("tr");
-    row.innerHTML=`
-      <td>${i}</td>
-      <td>${formatoCOP(cuotaTotalMensual)}</td>
-      <td>${formatoCOP(capital)}</td>
-      <td>${formatoCOP(interes)}</td>
-      <td>${formatoCOP(cuotaMipymeMensual)}</td>
-      <td>${formatoCOP(Math.max(saldo,0))}</td>
-    `;
-    tbody.appendChild(row);
-  }
-  tabla.style.display="table";
-}
-
-[elTipo,elPerfil,elMonto,elPlazo].forEach(el=>{
-  el.addEventListener("input",()=>{
-    if(el===elMonto){
-      const v=limpiarNumero(elMonto.value);
-      elMonto.value=v?formatoCOP(v):"";
-    }
-    calcularYRenderizar();
-  });
-});
-elMonto.addEventListener("blur",()=>{
-  const v=limpiarNumero(elMonto.value);
-  elMonto.value=v?formatoCOP(v):"";
-});
+const fngTabla={1:[2.99,3.5,3.75],2:[2.99,3.5,3.75],3:[2.99,3.5,3.75],4:[2.99,3.5,3.75],5:[2.99,3.5,3.75],6:[2.99,3.5,3.75],7:[2.99,3.5,3.75],8:[2.99,3.5,3.75],9:[2.99,3.5,3.75],10:[2.99,3.5,3.75],11:[2.99,3.5,3.75],12:[2.99,3.5,3.75],13:[3.01,3.52,3.77],14:[3.03,3.58,3.84],15:[3.05,3.68,3.94],16:[3.06,3.8,4.07],17:[3.08,3.93,4.21],18:[3.1,4.09,4.38],19:[3.11,4.26,4.56],20:[3.13,4.44,4.76],21:[3.15,4.64,4.97],22:[3.17,4.84,5.18],23:[3.18,5.05,5.41],24:[3.2,5.27,5.64],25:[3.22,5.35,5.73],26:[3.23,5.45,5.83],27:[3.25,5.56,5.96],28:[3.27,5.68,6.09],29:[3.29,5.82,6.24],30:[3.3,5.97,6.4],31:[3.32,6.13,6.56],32:[3.34,6.29,6.74],33:[3.35,6.47,6.93],34:[3.37,6.65,7.12],35:[3.39,6.83,7.32],36:[3.41,7.02,7.53]};
+const factoresSeguroVida={M:{18:0.377,19:0.377,20:0.377,21:0.383,22:0.390,23:0.397,24:0.404,25:0.409,26:0.415,27:0.419,28:0.426,29:0.432,30:0.437,31:0.444,32:0.451,33:0.459,34:0.469,35:0.479,36:0.479,37:0.490,38:0.502,39:0.516,40:0.532,41:0.547,42:0.565,43:0.581,44:0.600,45:0.620,46:0.641,47:0.663,48:0.693,49:0.727,50:0.765,51:0.852,52:0.909,53:0.979,54:1.060,55:1.155,56:1.158,57:1.274,58:1.410,59:1.562,60:1.727,61:2.331,62:2.542,63:2.760,64:2.968,65:3.177,66:3.382,67:3.591,68:3.866,69:4.116,70:4.397,71:3.068,72:3.347,73:3.719,74:4.194,75:4.788,76:5.520,77:6.410,78:7.507,79:8.990,80:10.937,81:10.937,82:10.937,83:10.937,84:10.937,85:10.937},F:{18:0.377,19:0.377,20:0.377,21:0.377,22:0.377,23:0.377,24:0.377,25:0.383,26:0.383,27:0.390,28:0.397,29:0.404,30:0.409,31:0.415,32:0.419,33:0.426,34:0.432,35:0.437,36:0.444,37:0.451,38:0.459,39:0.469,40:0.479,41:0.479,42:0.490,43:0.502,44:0.516,45:0.532,46:0.547,47:0.565,48:0.581,49:0.600,50:0.620,51:0.620,52:0.677,53:0.699,54:0.731,55:0.767,56:0.807,57:0.852,58:0.909,59:0.979,60:1.060,61:1.155,62:1.423,63:1.566,64:1.733,65:1.920,66:2.122,67:2.331,68:2.542,69:2.760,70:2.968,71:3.177,72:3.382,73:3.591,74:3.866,75:4.116,76:4.397,77:3.068,78:3.347,79:3.719,80:4.194,81:4.788,82:5.520,83:6.410,84:7.507,85:10.937}};
+function formatoCOP(n){return"$"+Math.round(n).toLocaleString("es-CO");}
+function limpiarNumero(v){return parseInt(String(v||"").replace(/[^\d]/g,""))||0;}
+function formatoPct(p){return p.toFixed(2).replace(".",",")+"%";}
+const elTipo=document.getElementById("tipoCliente"),elPerfil=document.getElementById("perfil"),elMonto=document.getElementById("monto"),elPlazo=document.getElementById("plazo"),elGenero=document.getElementById("genero"),elEdad=document.getElementById("edad"),elInfoBlock=document.getElementById("infoBlock"),elTEA=document.getElementById("tasaTEA"),elCuotaFija=document.getElementById("cuotaFija"),elAplicaMipyme=document.getElementById("aplicaMipyme"),elFngLine=document.getElementById("fngLine"),elFngValue=document.getElementById("fngValue"),tabla=document.getElementById("tablaResultados"),tbody=tabla.querySelector("tbody");
+(function(){for(let a=18;a<=85;a++){const o=document.createElement("option");o.value=a;o.textContent=a;if(a===30)o.selected=!0;elEdad.appendChild(o)}})();
+function obtenerTasa(t,p,m){const r=m<=8541000?0:m<=35587500?1:2;return tasas[t][p][r]}
+function obtenerFngPct(p,m){if(p<1||p>36)return;const r=m<=8541000?0:m<=35587500?1:2;return fngTabla[p][r]}
+function obtenerPctMipyme(m,t,p){if(t==="ANTIGUO"&&p==="A+")return 0;if(m<=5693900)return.006045;if(m<=35587500)return.003675;return 0}
+function obtenerFactorSeguro(g,e){const ed=Math.max(18,Math.min(85,parseInt(e)||30)),mapa=g==="M"?factoresSeguroVida.M:factoresSeguroVida.F;return mapa[ed]!==undefined?mapa[ed]:mapa[85]}
+function obtenerSeguroVida(m,g,e){const f=obtenerFactorSeguro(g,e);return Math.ceil(m*(f/1000))}
+function calcularYRenderizar(){const t=elTipo.value,p=elPerfil.value,m=limpiarNumero(elMonto.value),pl=parseInt(elPlazo.value)||0,g=elGenero.value,e=parseInt(elEdad.value)||0;if(!m||!pl||!e||!t||!p||!g){elInfoBlock.style.display="none";tabla.style.display="none";return}const tea=obtenerTasa(t,p,m),tem=Math.pow(1+tea/100,1/12)-1,cuotaBase=m*(tem/(1-Math.pow(1+tem,-pl))),pctMipymeSinIVA=obtenerPctMipyme(m,t,p),pctMipymeConIVA=pctMipymeSinIVA*1.19,cuotaMipymeMensual=m*pctMipymeConIVA,seguroMensual=obtenerSeguroVida(m,g,e),cuotaTotalMensual=cuotaBase+cuotaMipymeMensual+seguroMensual;elInfoBlock.style.display="block";if(document.getElementById("tasaTEA"))document.getElementById("tasaTEA").textContent=tea.toFixed(2)+"%";elCuotaFija.textContent=formatoCOP(cuotaTotalMensual);elAplicaMipyme.textContent=pctMipymeSinIVA>0?"Sí":"No";const fngPct=obtenerFngPct(pl,m);if(!fngPct)elFngValue.textContent="No se tiene información del % de FNG.";else{const vFNG=m*(fngPct/100)*1.19;elFngValue.textContent=`${formatoPct(fngPct)} - ${formatoCOP(vFNG)}`}tbody.innerHTML="";let saldo=m;for(let i=1;i<=pl;i++){const interes=saldo*tem,capital=cuotaBase-interes;saldo-=capital;const row=document.createElement("tr");row.innerHTML=`<td>${i}</td><td>${formatoCOP(cuotaTotalMensual)}</td><td>${formatoCOP(capital)}</td><td>${formatoCOP(interes)}</td><td>${formatoCOP(cuotaMipymeMensual)}</td><td>${formatoCOP(seguroMensual)}</td><td>${formatoCOP(Math.max(saldo,0))}</td>`;tbody.appendChild(row)}tabla.style.display="table"}
+[elTipo,elPerfil,elMonto,elPlazo,elGenero,elEdad].forEach(e=>{e.addEventListener("input",()=>{if(e===elMonto){const v=limpiarNumero(elMonto.value);elMonto.value=v?formatoCOP(v):""}calcularYRenderizar()})});
+elMonto.addEventListener("blur",()=>{const v=limpiarNumero(elMonto.value);elMonto.value=v?formatoCOP(v):""});
+window.addEventListener("load",()=>{const v=limpiarNumero(elMonto.value);elMonto.value=v?formatoCOP(v):"";calcularYRenderizar()});
 </script>
 </body>
 </html>
-
