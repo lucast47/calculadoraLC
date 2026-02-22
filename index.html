@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Calculadora de Crédito</title>
+<title>Calculadora de Crédito Pro</title>
 <style>
   :root{
     --primary:#2563eb;
-    --card-bg:#fff;
-    --muted:#6b7280;
+    --primary-dark: #1e40af;
     --surface:#f8fafc;
+    --blue-light: #eff6ff;
+    --blue-border: #bfdbfe;
   }
   body{
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
@@ -17,132 +18,184 @@
     margin: 20px;
     color:#111827;
   }
-  h1{ text-align:center; color:#0f172a; margin-bottom:20px; }
+  h1{ text-align:center; color:#0f172a; margin-bottom:24px; font-weight: 800; }
+  
   .card{
     max-width:1000px;
     margin:0 auto;
-    background:var(--card-bg);
-    padding:24px;
-    border-radius:12px;
-    box-shadow:0 6px 18px rgba(15,23,42,0.08);
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 10px 25px rgba(15,23,42,0.1);
+    overflow: hidden;
   }
+
+  /* Sección Superior Azul (Formulario) */
+  .form-section {
+    background: var(--blue-light);
+    padding: 28px;
+    border-bottom: 1px solid var(--blue-border);
+  }
+  
   form{
     display:grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap:16px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap:20px;
     align-items:end;
   }
-  label{ display:block; font-weight:600; margin-bottom:6px; font-size:0.9rem; color:#374151;}
+  label{ display:block; font-weight:700; margin-bottom:8px; font-size:0.85rem; color:#1e40af; text-transform: uppercase; letter-spacing: 0.5px;}
   select, input{
     width:100%;
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #d1d5db;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid var(--blue-border);
     font-size:1rem;
     box-sizing:border-box;
+    background: #fff;
   }
-  .info {
-    margin-top:20px;
+
+  /* Bloque de Información Colapsable */
+  .info-container {
+    margin: 24px;
+    border: 2px solid var(--blue-border);
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  /* Resumen: Solo Cuota */
+  .info-summary {
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: #fff;
+    border-radius: 12px;
+  }
+  
+  .summary-item { display: flex; flex-direction: column; }
+  .summary-item strong { font-size: 0.85rem; color: var(--primary-dark); text-transform: uppercase; margin-bottom: 4px;}
+  .summary-item span { font-size: 1.8rem; font-weight: 900; color: #0f172a; }
+
+  .toggle-icon {
+    width: 28px;
+    height: 28px;
+    transition: transform 0.3s;
+    fill: var(--primary);
+  }
+  .is-open .toggle-icon { transform: rotate(180deg); }
+
+  /* Detalles: Tasa, Mipyme, FNG, Intereses */
+  .info-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, opacity 0.3s;
+    opacity: 0;
+    padding: 0 30px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    background:#eff6ff; /* Azul claro */
-    padding:20px;
-    border-radius:10px;
-    border:1px solid #bfdbfe;
+    gap: 20px;
   }
-  .info p{ margin:0; font-size:0.95rem; }
-  .info strong{ display:block; color:#1e40af; font-size:0.8rem; text-transform: uppercase;}
-  .info span { font-size: 1.1rem; font-weight: bold; color: #1e3a8a; }
+  .is-open .info-details {
+    max-height: 300px;
+    opacity: 1;
+    padding-bottom: 30px;
+    border-top: 1px solid var(--blue-light);
+    padding-top: 20px;
+  }
 
-  .table-container {
-    margin-top: 24px;
-    overflow-x: auto;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-  }
-  table{
-    width:100%;
-    border-collapse:collapse;
-    background:#fff;
-  }
-  th, td{
-    padding:12px;
-    border-bottom:1px solid #f3f4f6;
-    text-align:right;
-    font-size:0.85rem;
-  }
-  thead th{
-    background:var(--primary);
-    color:#fff;
-    position: sticky;
-    top: 0;
-  }
-  tfoot td {
-    background: #f1f5f9;
-    font-weight: bold;
-    color: #0f172a;
-    border-top: 2px solid #cbd5e1;
-  }
-  tbody tr:nth-child(even) { background: #f9fafb; }
-  .text-left { text-align: left; }
+  .detail-item strong { display: block; font-size: 0.75rem; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+  .detail-item span { font-size: 1rem; font-weight: 700; color: #1e293b; }
+
+  /* Tabla */
+  .table-container { margin: 0 24px 24px 24px; overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:14px; text-align:right; font-size:0.85rem; border-bottom: 1px solid #f1f5f9; }
+  thead th { background: var(--primary); color:#fff; font-weight: 600; }
+  tfoot td { background: #f8fafc; font-weight: 800; color: var(--primary-dark); border-top: 2px solid var(--blue-border); }
 </style>
 </head>
 <body>
 
-  <h1>Cotizador</h1>
+  <h1>Calculadora de Crédito</h1>
 
   <div class="card">
-    <form id="form">
-      <div>
-        <label>Tipo de Cliente</label>
-        <select id="tipoCliente">
-          <option value="NUEVO">NUEVO</option>
-          <option value="ANTIGUO">ANTIGUO</option>
-        </select>
-      </div>
-      <div>
-        <label>Perfil Crediticio</label>
-        <select id="perfil">
-          <option value="A+">A+</option>
-          <option value="BAA">BAA</option>
-          <option value="BBB">BBB</option>
-          <option value="BCC">BCC</option>
-        </select>
-      </div>
-      <div>
-        <label>Monto (COP)</label>
-        <input id="monto" type="text" placeholder="$0" required />
-      </div>
-      <div>
-        <label>Plazo (Meses)</label>
-        <input id="plazo" type="number" min="1" max="120" value="12" required />
-      </div>
-      <div>
-        <label>Género</label>
-        <select id="genero">
-          <option value="F">Femenino</option>
-          <option value="M">Masculino</option>
-        </select>
-      </div>
-      <div>
-        <label>Edad</label>
-        <select id="edad"></select>
-      </div>
-    </form>
+    <div class="form-section">
+      <form id="form">
+        <div>
+          <label>Tipo de Cliente</label>
+          <select id="tipoCliente">
+            <option value="NUEVO">NUEVO</option>
+            <option value="ANTIGUO">ANTIGUO</option>
+          </select>
+        </div>
+        <div>
+          <label>Perfil</label>
+          <select id="perfil">
+            <option value="A+">A+</option>
+            <option value="BAA">BAA</option>
+            <option value="BBB">BBB</option>
+            <option value="BCC">BCC</option>
+          </select>
+        </div>
+        <div>
+          <label>Monto solicitado</label>
+          <input id="monto" type="text" placeholder="$0" required />
+        </div>
+        <div>
+          <label>Plazo (Meses)</label>
+          <input id="plazo" type="number" min="1" max="120" value="12" required />
+        </div>
+        <div>
+          <label>Género</label>
+          <select id="genero">
+            <option value="F">Femenino</option>
+            <option value="M">Masculino</option>
+          </select>
+        </div>
+        <div>
+          <label>Edad</label>
+          <select id="edad"></select>
+        </div>
+      </form>
+    </div>
 
-    <div class="info" id="infoBlock" style="display:none;">
-      <p><strong>Primera Cuota Aprox.</strong> <span id="cuotaFija"></span></p>
-      <p><strong>Tasa Interés</strong> <span id="tasaTEA"></span></p>
-      <p><strong>% MIPYME (Mes)</strong> <span id="aplicaMipyme"></span></p>
-      <p id="fngLine"><strong>FNG Estimado (IVA Inc.)</strong> <span id="fngValue"></span></p>
+    <div class="info-container" id="infoContainer" style="display:none;">
+      <div class="info-summary" onclick="toggleDetails()">
+        <div class="summary-item">
+          <strong>Primera Cuota Aproximada</strong>
+          <span id="cuotaFija"></span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <small style="color:var(--muted); font-size:0.75rem;">Ver detalles</small>
+            <svg class="toggle-icon" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5H7z"/></svg>
+        </div>
+      </div>
+      
+      <div class="info-details" id="infoDetails">
+        <div class="detail-item">
+          <strong>Tasa de Interés</strong>
+          <span id="tasaTEA"></span>
+        </div>
+        <div class="detail-item">
+          <strong>Comisión MIPYME (IVA Inc.)</strong>
+          <span id="aplicaMipyme"></span>
+        </div>
+        <div class="detail-item">
+          <strong>FNG Estimado (IVA Inc.)</strong>
+          <span id="fngValue"></span>
+        </div>
+        <div class="detail-item">
+          <strong>Costo Total Intereses</strong>
+          <span id="totalInteresInfo"></span>
+        </div>
+      </div>
     </div>
 
     <div class="table-container">
       <table id="tablaResultados" style="display:none;">
         <thead>
           <tr>
-            <th class="text-left">#</th>
+            <th style="text-align:left">#</th>
             <th>Cuota Total</th>
             <th>Capital</th>
             <th>Interés</th>
@@ -169,16 +222,12 @@ const CONFIG = {
   },
   TASAS: {
     NUEVO: {
-      "A+":  [48.65, 46.20, 35.20],
-      "BAA": [56.50, 51.40, 37.20],
-      "BBB": [60.70, 52.00, 37.50],
-      "BCC": [65.00, 65.00, 65.00]
+      "A+":  [48.65, 46.20, 35.20], "BAA": [56.50, 51.40, 37.20],
+      "BBB": [60.70, 52.00, 37.50], "BCC": [65.00, 65.00, 65.00]
     },
     ANTIGUO: {
-      "A+":  [44.65, 42.60, 32.20],
-      "BAA": [55.85, 51.00, 36.60],
-      "BBB": [60.20, 51.60, 37.00],
-      "BCC": [65.00, 65.00, 65.00]
+      "A+":  [44.65, 42.60, 32.20], "BAA": [55.85, 51.00, 36.60],
+      "BBB": [60.20, 51.60, 37.00], "BCC": [65.00, 65.00, 65.00]
     }
   }
 };
@@ -189,6 +238,10 @@ const factoresSeguroVida={M:{18:0.377,19:0.377,20:0.377,21:0.383,22:0.390,23:0.3
 function formatoCOP(n){return"$"+Math.round(n).toLocaleString("es-CO");}
 function limpiarNumero(v){return parseInt(String(v||"").replace(/[^\d]/g,""))||0;}
 
+function toggleDetails() {
+  document.getElementById("infoContainer").classList.toggle("is-open");
+}
+
 function obtenerIndiceRango(monto) {
   const sm = CONFIG.SMMLV;
   if (monto <= (sm * CONFIG.TOPES_SMMLV.RANGO_1)) return 0;
@@ -197,8 +250,7 @@ function obtenerIndiceRango(monto) {
 }
 
 function obtenerTasa(tipo, perfil, monto) {
-  const idx = obtenerIndiceRango(monto);
-  return CONFIG.TASAS[tipo][perfil][idx];
+  return CONFIG.TASAS[tipo][perfil][obtenerIndiceRango(monto)];
 }
 
 function obtenerPctMipyme(monto, tipo, perfil) {
@@ -225,80 +277,55 @@ function calcularYRenderizar(){
         g=document.getElementById("genero").value, 
         e=parseInt(document.getElementById("edad").value)||0;
 
-  if(!m || !pl) return;
+  if(!m || !pl){
+    document.getElementById("infoContainer").style.display="none";
+    document.getElementById("tablaResultados").style.display="none";
+    return;
+  }
 
   const tea = obtenerTasa(t, p, m);
   const tem = Math.pow(1 + tea/100, 1/12) - 1;
-  const temPct = (tem * 100).toFixed(2);
   const cuotaBase = m * (tem / (1 - Math.pow(1 + tem, -pl)));
-  const pctMipymeMensual = obtenerPctMipyme(m, t, p) * 1.19; 
+  const pctMipyme = obtenerPctMipyme(m, t, p);
   const factorSeguro = (g === "M" ? factoresSeguroVida.M[e] : factoresSeguroVida.F[e]) || 0.377;
   const seguroMensual = Math.ceil(m * (factorSeguro / 1000));
 
+  let saldo = m;
+  let totalCuota = 0, totalCapital = 0, totalInteres = 0, totalMipyme = 0, totalSeguro = 0;
+  let primeraCuota = 0;
+
   const tbody = document.querySelector("#tablaResultados tbody");
   tbody.innerHTML = "";
-  
-  let saldo = m;
-  let primeraCuota = 0;
-  
-  // Acumuladores para totales
-  let totalCuota = 0;
-  let totalCapital = 0;
-  let totalInteres = 0;
-  let totalMipyme = 0;
-  let totalSeguro = 0;
 
   for(let i=1; i<=pl; i++){
     const interes = saldo * tem;
     const capital = cuotaBase - interes;
-    const mipymeMes = saldo * pctMipymeMensual; 
+    const mipymeMes = saldo * (pctMipyme * 1.19);
     const cuotaTotalMes = cuotaBase + mipymeMes + seguroMensual;
     
     if(i === 1) primeraCuota = cuotaTotalMes;
 
-    // Sumar a totales
-    totalCuota += cuotaTotalMes;
-    totalCapital += capital;
-    totalInteres += interes;
-    totalMipyme += mipymeMes;
-    totalSeguro += seguroMensual;
+    totalCuota += cuotaTotalMes; totalCapital += capital; totalInteres += interes;
+    totalMipyme += mipymeMes; totalSeguro += seguroMensual;
 
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="text-left">${i}</td>
-      <td>${formatoCOP(cuotaTotalMes)}</td>
-      <td>${formatoCOP(capital)}</td>
-      <td>${formatoCOP(interes)}</td>
-      <td>${formatoCOP(mipymeMes)}</td>
-      <td>${formatoCOP(seguroMensual)}</td>
-      <td>${formatoCOP(Math.max(0, saldo - capital))}</td>
-    `;
+    tr.innerHTML = `<td>${i}</td><td>${formatoCOP(cuotaTotalMes)}</td><td>${formatoCOP(capital)}</td><td>${formatoCOP(interes)}</td><td>${formatoCOP(mipymeMes)}</td><td>${formatoCOP(seguroMensual)}</td><td>${formatoCOP(Math.max(0, saldo-capital))}</td>`;
     tbody.appendChild(tr);
     saldo -= capital;
   }
 
-  // Render Totales en el tfoot
-  document.getElementById("filaTotales").innerHTML = `
-    <td class="text-left">TOTAL</td>
-    <td>${formatoCOP(totalCuota)}</td>
-    <td>${formatoCOP(totalCapital)}</td>
-    <td>${formatoCOP(totalInteres)}</td>
-    <td>${formatoCOP(totalMipyme)}</td>
-    <td>${formatoCOP(totalSeguro)}</td>
-    <td>-</td>
-  `;
-
-  // Actualizar Bloque Info
-  document.getElementById("infoBlock").style.display="grid";
-  document.getElementById("tasaTEA").textContent = `${tea.toFixed(2)}% E.A. - ${temPct}% Mes`;
+  // Actualizar UI
+  document.getElementById("infoContainer").style.display="block";
   document.getElementById("cuotaFija").textContent = formatoCOP(primeraCuota);
-  document.getElementById("aplicaMipyme").textContent = (obtenerPctMipyme(m, t, p)*100).toFixed(4) + "%";
-  
+  document.getElementById("tasaTEA").textContent = `${tea.toFixed(2)}% E.A. - ${(tem*100).toFixed(2)}% Mes`;
+  document.getElementById("aplicaMipyme").textContent = `${(pctMipyme*100).toFixed(4)}% Mes`;
+  document.getElementById("totalInteresInfo").textContent = formatoCOP(totalInteres);
+
   const fngIdx = Math.min(pl, 36);
   const fngPct = fngTabla[fngIdx] ? fngTabla[fngIdx][obtenerIndiceRango(m)] : 0;
-  const vFNG = m * (fngPct / 100) * 1.19;
-  document.getElementById("fngValue").textContent = `${fngPct}% - ${formatoCOP(vFNG)}`;
-  
+  document.getElementById("fngValue").textContent = `${fngPct}% - ${formatoCOP(m * (fngPct/100) * 1.19)}`;
+
+  document.getElementById("filaTotales").innerHTML = `<td style="text-align:left">TOTAL</td><td>${formatoCOP(totalCuota)}</td><td>${formatoCOP(totalCapital)}</td><td>${formatoCOP(totalInteres)}</td><td>${formatoCOP(totalMipyme)}</td><td>${formatoCOP(totalSeguro)}</td><td>-</td>`;
   document.getElementById("tablaResultados").style.display="table";
 }
 
